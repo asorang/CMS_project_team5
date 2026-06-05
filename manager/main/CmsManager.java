@@ -5,7 +5,7 @@ import com.google.gson.JsonParser;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import ui.ManagerUI;
 
 public class CmsManager {
@@ -37,6 +37,11 @@ public class CmsManager {
 
     public static void main(String[] args) {
         CmsManager backendEngine = new CmsManager();
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            System.err.println("시스템 Look and Feel 설정 실패: " + e.getMessage());
+        }
 
         //Scanner scanner = new Scanner(System.in);
         //System.out.println("명령어 입력 (CONNECT / SHUTDOWN / REBOOT / LOCK)");
