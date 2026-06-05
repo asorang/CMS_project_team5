@@ -37,8 +37,8 @@ public class SettingUIManager {
             if (!settingUI.isModified()) {
                 JOptionPane.showMessageDialog(
                         settingUI,
-                        "No changes detected.",
-                        "Save Failed",
+                        "변경 사항이 없습니다.",
+                        "저장 실패",
                         JOptionPane.WARNING_MESSAGE
                 );
                 return;
