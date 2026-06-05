@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.AgentState;
 
+import javax.swing.*;
 import java.io.*;
 
 /**
@@ -16,8 +17,16 @@ public class ConfigManager {
     public static void loadConfig() {
         File file = new File(AgentState.CONFIG_FILE);
         if (!file.exists()) {
-            System.out.println("설정 파일을 찾을 수 없습니다.");
-            System.exit(0);
+            // 설정파일을 찾을 수 없으면 기본 설정파일을 생성 및 로드한다.
+            defaultConfig();
+            SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "기본 설정 파일이 생성되었습니다.\n설정 창에서 기본값을 수정 후 사용해주세요.",
+                            "알림",
+                            JOptionPane.INFORMATION_MESSAGE
+                    )
+            );
         }
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -39,6 +48,21 @@ public class ConfigManager {
             System.out.println("설정 로드 실패: " + e.getMessage());
         }
     }
+    // 설정 파일 신규 작성 (없는 경우)
+    static void defaultConfig() {
+        JsonObject root = new JsonObject();
+        root.addProperty("password", "1234");
+        root.addProperty("port", 10293);
+        root.add("programs", new JsonArray());
+
+        try (FileWriter fw = new FileWriter(AgentState.CONFIG_FILE)) {
+            fw.write(root.toString());
+            System.out.println("기본 설정 파일 생성됨");
+        } catch (Exception e) {
+            System.out.println("기본 설정 저장 실패: " + e.getMessage());
+        }
+    }
+
 
     // 설정 파일 저장
     public static void saveConfig() {
