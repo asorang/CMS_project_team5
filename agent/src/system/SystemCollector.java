@@ -47,7 +47,7 @@ public class SystemCollector {
 
         JsonObject json = new JsonObject();
         json.addProperty("os",          AgentState.OS.toString());
-        json.addProperty("processor",   AgentState.CPU.getProcessorIdentifier().getName());
+        json.addProperty("processor",   AgentState.CPU.getProcessorIdentifier().getName().strip());
         json.addProperty("cores",       AgentState.CPU.getPhysicalProcessorCount());
         json.addProperty("threads",     AgentState.CPU.getLogicalProcessorCount());
         json.addProperty("totalMemory", toGB(AgentState.HAL.getMemory().getTotal()));
