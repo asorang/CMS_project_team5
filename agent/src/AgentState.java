@@ -22,7 +22,7 @@ public class AgentState {
     public static final int INTERVAL = 10;
     public static final String CONFIG_FILE = "config.json";
     public static final List<String[]> PROGRAMS = new ArrayList<>();
-    public static final boolean DEBUG_MODE = true;
+    public static final boolean DEBUG_MODE = false;
 
     // 네트워크 소켓
     public static java.net.ServerSocket serverSocket;

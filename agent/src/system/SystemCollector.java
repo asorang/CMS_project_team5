@@ -72,9 +72,22 @@ public class SystemCollector {
         ack.addProperty("type", "ACK");
 
         try {
-            JsonObject cmdJson = JsonParser.parseString(json).getAsJsonObject();
+            JsonObject wrapper = JsonParser.parseString(json).getAsJsonObject();
+            String payload = wrapper.get("payload").toString();
+            int received   = wrapper.get("checksum").getAsInt();
+
+            if (checksum(payload) != received) {
+                System.out.println("명령어 체크섬이 올바르지 않습니다. (Manager 체크섬 :" + received + " / 실제 체크섬 : " + checksum(payload));
+                ack.addProperty("status", "FAILED");
+                ack.addProperty("message", "Checksum Mismatch");
+                return;
+            } else {
+                System.out.println("명령어 무결성 확인됨 (Manager 체크섬 :" + received + " / 실제 체크섬 : " + checksum(payload) + ")");
+            }
+
+            JsonObject cmdJson = wrapper.get("payload").getAsJsonObject();
             String cmd = cmdJson.get("cmd").getAsString();
-            ack.addProperty("cmd", cmd);
+
             System.out.println("[수신] " + json);
 
             if (AgentState.DEBUG_MODE) {
@@ -118,5 +131,11 @@ public class SystemCollector {
 
     private static long toGB(long bytes) {
         return bytes / (1024 * 1024 * 1024);
+    }
+
+    static int checksum(String json) {
+        int sum = 0;
+        for (char c : json.toCharArray()) sum += c;
+        return sum;
     }
 }
