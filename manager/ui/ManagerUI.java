@@ -705,7 +705,7 @@ public class ManagerUI {
     //명령어 보낸거 확인 됐는지 확인하는 로직
     public void showCommandResult(String alias, JsonObject ackJson) {
         SwingUtilities.invokeLater(() -> {
-            String cmd = ackJson.has("cmd") ? ackJson.get("cmd").getAsString() : "알 수 없음";
+
             String status = ackJson.has("status") ? ackJson.get("status").getAsString() : "UNKNOWN";
             String msg = ackJson.has("message") ? ackJson.get("message").getAsString() : "";
 
@@ -713,7 +713,7 @@ public class ManagerUI {
             String title = status.equals("SUCCESS") ? "원격 명령 수행 성공" : "원격 명령 수행 실패";
 
             JOptionPane.showMessageDialog(null,
-                    "[" + alias + "] 단말 응답 결과\n\n▶ 명령어: " + cmd + "\n▶ 처리 상태: " + status + "\n▶ 상세 메시지: " + msg,
+                    "[" + alias + "] 단말 응답 결과\n\n▶ 처리 상태: " + status + "\n▶ 상세 메시지: " + msg,
                     title, msgType);
         });
     }
