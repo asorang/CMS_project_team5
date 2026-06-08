@@ -45,9 +45,9 @@ public class ManagerUI {
     }
 
     public void drawUI() {
-        JFrame frame = new JFrame("Manager Central Management System");
+        JFrame frame = new JFrame("JSimpleCMS Management System");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(960, 540);
+        frame.setSize(960, 640);
         frame.setLocationRelativeTo(null);
 
         JPanel mainPanel = new JPanel(new BorderLayout());

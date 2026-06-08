@@ -28,7 +28,7 @@ public class TrayManager {
         popup.addSeparator();
         popup.add(exitItem);
 
-        AgentState.trayIcon = new TrayIcon(AgentState.iconOffline, "CMS Agent", popup);
+        AgentState.trayIcon = new TrayIcon(AgentState.iconOffline, "JSimpleCMS Agent", popup);
         AgentState.trayIcon.setImageAutoSize(true);
 
         // 더블클릭 → 설정 창 표시
