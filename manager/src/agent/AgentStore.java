@@ -39,7 +39,15 @@ public class AgentStore {
 
     public void loadAgents() {
         File file = new File(AGENT_FILE);
-        if (!file.exists()) return;
+        if (!file.exists()){
+            try (FileWriter fw = new FileWriter(file)){
+                fw.write("{}");
+                System.out.println("agents.json 생성됨");
+            } catch (Exception e) {
+                System.out.println("agents.json 생성 실패:" + e.getMessage());
+            }
+            return;
+        }
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             JsonObject root = JsonParser.parseReader(br).getAsJsonObject();
