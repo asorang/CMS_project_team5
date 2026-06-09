@@ -22,6 +22,7 @@ public class AgentStore {
     }
 
     public void saveAgents() {
+        // agents.forEach((k, v) -> System.out.println(k + "/" + v.ip));
         JsonObject root = new JsonObject();
         agents.forEach((alias, agent) -> {
             JsonObject entry = new JsonObject();

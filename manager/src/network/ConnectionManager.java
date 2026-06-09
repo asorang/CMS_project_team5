@@ -3,6 +3,7 @@ package src.network;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.agent.AgentConnection;
+import src.agent.AgentStore;
 import src.ui.ManagerUI;
 
 import javax.swing.*;
@@ -14,7 +15,7 @@ import java.util.Map;
  * Agent 연결 수립, 명령 전송, 수신 스레드 담당
  */
 public class ConnectionManager {
-
+    private AgentStore agentStore;
     private static final int PORT     = 10293;
     private static final int INTERVAL = 10;
 
@@ -62,6 +63,7 @@ public class ConnectionManager {
 
             AgentConnection agent = new AgentConnection(alias, agentIP, agentPW, socket, out, in, true);
             agents.put(alias, agent);
+            agentStore.saveAgents();
             notifyUI();
 
             // 수신 스레드
@@ -136,6 +138,9 @@ public class ConnectionManager {
         }
     }
 
+    public void setAgentStore(AgentStore agentStore){
+        this.agentStore = agentStore;
+    }
     private static int checksum(String json) {
         int sum = 0;
         for (char c : json.toCharArray()) sum += c;

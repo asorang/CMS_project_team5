@@ -48,7 +48,7 @@ public class CmsManager {
         // 2. 백엔드 초기화
         ConnectionManager connectionManager = new ConnectionManager(agents);
         AgentStore agentStore = new AgentStore(agents, connectionManager);
-
+        connectionManager.setAgentStore(agentStore);
         // 3. UI 초기화
         SwingUtilities.invokeLater(() -> {
             ManagerUI managerUI = new ManagerUI(connectionManager, agentStore);
