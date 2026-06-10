@@ -149,7 +149,7 @@ public class ManagerUI {
 
         JPanel blankView = new JPanel(new BorderLayout());
         blankView.setBackground(Color.WHITE);
-        JLabel defaultMessage = new JLabel("조회할 에이전트 PC를 좌측 목록에서 선택하십시오.", SwingConstants.CENTER);
+        JLabel defaultMessage = new JLabel("<html>[+]버튼을 눌러 새로운 에이전트 PC를 추가하거나,<br>조회할 에이전트 PC를 좌측 목록에서 선택하십시오.<html>", SwingConstants.CENTER);
         defaultMessage.setFont(CmsManager.baseFont.deriveFont(Font.PLAIN, 15));
         defaultMessage.setForeground(Color.GRAY);
         blankView.add(defaultMessage, BorderLayout.CENTER);
