@@ -420,6 +420,7 @@ public class ManagerUI {
 
         formPanel.add(new JLabel("대상 에이전트 IP"));   formPanel.add(ipField);
         formPanel.add(new JLabel("접속 보안 암호"));     formPanel.add(passField);
+        passField.setText(CmsManager.agents.get(selected.getPcName()).pw);
         formPanel.add(new JLabel("단말기 식별 명칭"));   formPanel.add(aliasField);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
