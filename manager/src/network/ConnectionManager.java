@@ -3,7 +3,7 @@ package src.network;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.agent.AgentConnection;
-import src.agent.AgentStore;
+import src.agent.AgentManager;
 import src.ui.ManagerUI;
 
 import javax.swing.*;
@@ -15,7 +15,7 @@ import java.util.Map;
  * Agent 연결 수립, 명령 전송, 수신 스레드 담당
  */
 public class ConnectionManager {
-    private AgentStore agentStore;
+    private AgentManager agentStore;
     private static final int PORT     = 10293;
     private static final int INTERVAL = 10;
 
@@ -54,12 +54,12 @@ public class ConnectionManager {
             String response = in.readLine();
             JsonObject authResult = JsonParser.parseString(response).getAsJsonObject();
             if (!authResult.get("auth").getAsString().equals("AUTH_OK")) {
-                System.out.println("인증 실패");
+                System.out.println("[" + alias + "] 인증 실패");
                 socket.close();
                 putOffline(alias, agentIP, agentPW);
                 return;
             }
-            System.out.println("인증 성공: " + alias);
+            System.out.println("[" + alias + "] 인증 성공");
 
             AgentConnection agent = new AgentConnection(alias, agentIP, agentPW, socket, out, in, true);
             agents.put(alias, agent);
@@ -95,7 +95,7 @@ public class ConnectionManager {
             }).start();
 
         } catch (Exception e) {
-            System.out.println("연결 실패 (" + alias + "): " + e.getMessage());
+            System.out.println("[" + alias + "] 연결 실패: " + e.getMessage());
             putOffline(alias, agentIP, agentPW);
         }
     }
@@ -107,7 +107,7 @@ public class ConnectionManager {
 
         AgentConnection agent = agents.get(alias);
         if (agent == null || !agent.ON_state) {
-            System.out.println("존재하지 않거나 오프라인 Agent: " + alias);
+            System.out.println("[" + alias + "] 존재하지 않는 Agent입니다. ");
             return;
         }
 
@@ -127,8 +127,11 @@ public class ConnectionManager {
     }
 
     private void putOffline(String alias, String ip, String pw) {
+        if (!agents.containsKey(alias)) return;
+
         agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, false));
         System.out.println("[" + alias + "] 오프라인 전환");
+        if (agentStore != null) agentStore.saveAgents();
         notifyUI();
     }
 
@@ -138,12 +141,15 @@ public class ConnectionManager {
         }
     }
 
-    public void setAgentStore(AgentStore agentStore){
-        this.agentStore = agentStore;
-    }
     private static int checksum(String json) {
         int sum = 0;
         for (char c : json.toCharArray()) sum += c;
         return sum;
     }
+
+    public ManagerUI getManagerUI() { return managerUI; }
+    public void setAgentStore(AgentManager agentStore){
+        this.agentStore = agentStore;
+    }
+
 }

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import src.agent.AgentConnection;
 import src.network.ConnectionManager;
-import src.agent.AgentStore;
+import src.agent.AgentManager;
 import src.CmsManager;
 
 import javax.swing.*;
@@ -20,7 +20,7 @@ import java.util.List;
 public class ManagerUI {
 
     private final ConnectionManager connectionManager;
-    private final AgentStore agentStore;
+    private final AgentManager agentStore;
 
     private JList<PcAgentData> pcJList;
     private DefaultListModel<PcAgentData> listModel;
@@ -44,7 +44,7 @@ public class ManagerUI {
     private JComboBox<String> shortcutCombo;
     private JButton runShortcutButton;
 
-    public ManagerUI(ConnectionManager connectionManager, AgentStore agentStore) {
+    public ManagerUI(ConnectionManager connectionManager, AgentManager agentStore) {
         this.connectionManager = connectionManager;
         this.agentStore        = agentStore;
     }
@@ -175,11 +175,21 @@ public class ManagerUI {
         mainTitleLabel = new JLabel("● PC-ONLINE");
         mainTitleLabel.setFont(CmsManager.baseFont.deriveFont( Font.BOLD, 15));
 
+        JButton editButton   = new JButton("수정");
         JButton deleteButton = new JButton("삭제");
+        editButton.addActionListener(e -> {
+            PcAgentData selected = pcJList.getSelectedValue();
+            if (selected != null) showEditAgentDialog(null, selected);
+        });
         deleteButton.addActionListener(e -> handleAgentDelete());
 
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        buttonGroup.setBackground(Color.WHITE);
+        buttonGroup.add(editButton);
+        buttonGroup.add(deleteButton);
+
         headerPanel.add(mainTitleLabel, BorderLayout.WEST);
-        headerPanel.add(deleteButton,   BorderLayout.EAST);
+        headerPanel.add(buttonGroup,    BorderLayout.EAST);
 
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
@@ -322,11 +332,21 @@ public class ManagerUI {
         offlineTitleLabel.setFont(CmsManager.baseFont.deriveFont( Font.BOLD, 15));
         offlineTitleLabel.setForeground(Color.RED);
 
+        JButton editButton   = new JButton("수정");
         JButton deleteButton = new JButton("삭제");
+        editButton.addActionListener(e -> {
+            PcAgentData selected = pcJList.getSelectedValue();
+            if (selected != null) showEditAgentDialog(null, selected);
+        });
         deleteButton.addActionListener(e -> handleAgentDelete());
 
+        JPanel buttonGroup = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        buttonGroup.setBackground(Color.WHITE);
+        buttonGroup.add(editButton);
+        buttonGroup.add(deleteButton);
+
         headerPanel.add(offlineTitleLabel, BorderLayout.WEST);
-        headerPanel.add(deleteButton,      BorderLayout.EAST);
+        headerPanel.add(buttonGroup,       BorderLayout.EAST);
 
         JLabel errorLabel = new JLabel(
                 "해당 에이전트 단말기 네트워크와 소켓 세션 연결을 수립할 수 없습니다.",
@@ -363,15 +383,18 @@ public class ManagerUI {
         connectButton.addActionListener(e -> {
             String targetIp = ipField.getText();
             String targetPw = new String(passField.getPassword());
-            String alias    = aliasField.getText();
+            String alias    = aliasField.getText().isEmpty() ? "PC-AGENT" : aliasField.getText();
+
             if (!targetIp.isEmpty()) {
-                String cmd = "CONNECT " + targetIp + " " + targetPw + " "
-                        + (alias.isEmpty() ? "PC-AGENT" : alias);
+                CmsManager.agents.put(alias,
+                        new AgentConnection(alias, targetIp, targetPw, null, null, null, false));
+                agentStore.saveAgents();
+                loadBackendPcList();
+
+                String cmd = "CONNECT " + targetIp + " " + targetPw + " " + alias;
                 new Thread(() -> connectionManager.connectAgent(cmd)).start();
+
                 dialog.dispose();
-                Timer timer = new Timer(1000, ev -> loadBackendPcList());
-                timer.setRepeats(false);
-                timer.start();
             }
         });
 
@@ -379,6 +402,62 @@ public class ManagerUI {
         buttonPanel.add(connectButton);
         dialog.add(formPanel,    BorderLayout.CENTER);
         dialog.add(buttonPanel,  BorderLayout.SOUTH);
+        dialog.setLocationRelativeTo(parentFrame);
+        dialog.setVisible(true);
+    }
+
+    private void showEditAgentDialog(JFrame parentFrame, PcAgentData selected) {
+        JDialog dialog = new JDialog(parentFrame, "에이전트 정보 수정", true);
+        dialog.setSize(340, 220);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel formPanel = new JPanel(new GridLayout(3, 2, 10, 10));
+        formPanel.setBorder(BorderFactory.createEmptyBorder(15, 20, 15, 20));
+
+        JTextField ipField = new JTextField(selected.getIpAddress());
+        JPasswordField passField = new JPasswordField();
+        JTextField aliasField = new JTextField(selected.getPcName());
+
+        formPanel.add(new JLabel("대상 에이전트 IP"));   formPanel.add(ipField);
+        formPanel.add(new JLabel("접속 보안 암호"));     formPanel.add(passField);
+        formPanel.add(new JLabel("단말기 식별 명칭"));   formPanel.add(aliasField);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        JButton cancelButton = new JButton("취소");
+        JButton saveButton   = new JButton("저장");
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+        saveButton.addActionListener(e -> {
+            String newIp    = ipField.getText();
+            String newPw    = new String(passField.getPassword());
+            String newAlias = aliasField.getText().isEmpty() ? selected.getPcName() : aliasField.getText();
+
+            if (!newIp.isEmpty()) {
+                // 기존 소켓 닫기 + Map에서 제거
+                AgentConnection old = CmsManager.agents.get(selected.getPcName());
+                if (old != null && old.socket != null) {
+                    try { old.socket.close(); } catch (Exception ignored) {}
+                }
+                CmsManager.agents.remove(selected.getPcName());
+
+                // 새 정보로 오프라인 추가 + 저장
+                CmsManager.agents.put(newAlias,
+                        new AgentConnection(newAlias, newIp, newPw, null, null, null, false));
+                agentStore.saveAgents();
+                loadBackendPcList();
+
+                // 백그라운드에서 재연결
+                String cmd = "CONNECT " + newIp + " " + newPw + " " + newAlias;
+                new Thread(() -> connectionManager.connectAgent(cmd)).start();
+
+                dialog.dispose();
+            }
+        });
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(saveButton);
+        dialog.add(formPanel,   BorderLayout.CENTER);
+        dialog.add(buttonPanel, BorderLayout.SOUTH);
         dialog.setLocationRelativeTo(parentFrame);
         dialog.setVisible(true);
     }

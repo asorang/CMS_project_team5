@@ -2,12 +2,11 @@ package src;
 
 import src.agent.AgentConnection;
 import src.network.ConnectionManager;
-import src.agent.AgentStore;
+import src.agent.AgentManager;
 import src.ui.ManagerUI;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,7 +46,7 @@ public class CmsManager {
 
         // 2. 백엔드 초기화
         ConnectionManager connectionManager = new ConnectionManager(agents);
-        AgentStore agentStore = new AgentStore(agents, connectionManager);
+        AgentManager agentStore = new AgentManager(agents, connectionManager);
         connectionManager.setAgentStore(agentStore);
         // 3. UI 초기화
         SwingUtilities.invokeLater(() -> {
