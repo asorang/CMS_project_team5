@@ -56,7 +56,7 @@ public class CmsManager {
             managerUI.drawUI();
 
             // 4. UI 초기화 완료 후 자동 접속
-            agentStore.loadAgents();
+            new Thread(() -> agentStore.loadAgents()).start();
         });
     }
 }

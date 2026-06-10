@@ -8,6 +8,8 @@ import src.system.SystemCollector;
 
 import java.io.*;
 import java.net.*;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 
 /**
  * ServerSocket 시작/재시작 및 연결 처리 담당
@@ -24,6 +26,17 @@ public class SocketManager {
                     Socket socket = AgentState.serverSocket.accept();
                     handleConnection(socket);
                 }
+            } catch (BindException e) {
+                // 포트번호가 겹치면 중복 실행으로 감지하고 프로그램 종료
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(
+                            null,
+                            "Agent 프로그램이 이미 실행 중입니다.\n실행 중이 아니라면, 다른 프로그램이 포트 " + AgentState.PORT + "(을)를 사용 중입니다.",
+                            "Agent 중복 감지됨",
+                            JOptionPane.ERROR_MESSAGE
+                    );
+                    System.exit(0);
+                });
             } catch (Exception e) {
                 System.out.println("소켓 종료: " + e.getMessage());
             }
