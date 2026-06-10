@@ -32,8 +32,13 @@ public class ManagerUI {
     private JLabel cpuValueLabel;
     private JLabel ramValueLabel;
     private JLabel diskValueLabel;
+
+    private JProgressBar cpuProgressBar;
+    private JLabel cpuUsageLabel;
+
     private JProgressBar memoryProgressBar;
     private JLabel memoryValueLabel;
+
     private JComboBox<String> systemActionCombo;
     private JLabel offlineTitleLabel;
     private JComboBox<String> shortcutCombo;
@@ -211,6 +216,29 @@ public class ManagerUI {
         contentPanel.add(sysGrid);
         contentPanel.add(Box.createVerticalStrut(25));
 
+        // CPU
+        JPanel cpuHeader = new JPanel(new BorderLayout());
+        cpuHeader.setBackground(Color.WHITE);
+        cpuHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cpuHeader.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        cpuHeader.add(new JLabel("CPU 사용률"), BorderLayout.WEST);
+        cpuUsageLabel = new JLabel("0 %", SwingConstants.RIGHT);
+        cpuHeader.add(cpuUsageLabel, BorderLayout.EAST);
+        contentPanel.add(cpuHeader);
+        contentPanel.add(Box.createVerticalStrut(10));
+
+        cpuProgressBar = new JProgressBar(0, 100);
+        cpuProgressBar.setStringPainted(true);
+        cpuProgressBar.setBackground(new Color(235, 235, 235));
+        cpuProgressBar.setForeground(new Color(255, 140, 0));  // 주황색으로 구분
+        cpuProgressBar.setBorderPainted(false);
+        cpuProgressBar.setAlignmentX(Component.LEFT_ALIGNMENT);
+        cpuProgressBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+        contentPanel.add(cpuProgressBar);
+
+        contentPanel.add(Box.createVerticalStrut(35));
+
+        // 메모리
         JPanel memHeader = new JPanel(new BorderLayout());
         memHeader.setBackground(Color.WHITE);
         memHeader.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -481,12 +509,19 @@ public class ManagerUI {
                 memoryProgressBar.setValue(ramPercent);
                 memoryValueLabel.setText(data.getCurrentRamUsed() + " GB / " + data.getTotalMemory()
                         + " GB (" + ramPercent + "%) - " + data.getUptime() + "s 가동");
+
+                int cpuPercent = data.getCurrentCpu();
+                cpuProgressBar.setValue(cpuPercent);
+                cpuUsageLabel.setText(cpuPercent + " %");
+
             } else {
                 cpuValueLabel.setText("시스템 정보 대기 중...");
                 ramValueLabel.setText("대기 중...");
                 diskValueLabel.setText("대기 중...");
                 memoryProgressBar.setValue(0);
                 memoryValueLabel.setText("실시간 OSHI 데이터 스트림 대기 중...");
+                cpuProgressBar.setValue(0);
+                cpuUsageLabel.setText("0 %");
             }
 
             rightCardLayout.show(rightPanel, "ONLINE_VIEW");
