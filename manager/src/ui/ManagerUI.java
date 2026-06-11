@@ -41,6 +41,7 @@ public class ManagerUI {
 
     private JComboBox<String> systemActionCombo;
     private JLabel offlineTitleLabel;
+    private JLabel offlineCardLabel;
     private JComboBox<String> shortcutCombo;
     private JButton runShortcutButton;
 
@@ -97,7 +98,7 @@ public class ManagerUI {
                     refreshButton.setIcon(loadIcon("/resource/icon_refresh.png", 18));
                     refreshButton.setEnabled(true);
                     JOptionPane.showMessageDialog(parentFrame,
-                            "최신 관제 목록을 백엔드 파일 저장소로부터 동기화함.",
+                            "에이전트 리스트를 새로고침했습니다.",
                             "완료", JOptionPane.INFORMATION_MESSAGE);
                 });
             }).start();
@@ -328,9 +329,8 @@ public class ManagerUI {
         headerPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, Color.LIGHT_GRAY));
         headerPanel.setPreferredSize(new Dimension(0, 40));
 
-        offlineTitleLabel = new JLabel("● PC-OFFLINE (연결 유실)");
+        offlineTitleLabel = new JLabel("<html><font color='red'>●</font> <b>PC-OFFLINE</b> - 연결 실패</html>");
         offlineTitleLabel.setFont(CmsManager.baseFont.deriveFont( Font.BOLD, 15));
-        offlineTitleLabel.setForeground(Color.RED);
 
         JButton editButton   = new JButton("수정");
         JButton deleteButton = new JButton("삭제");
@@ -348,14 +348,11 @@ public class ManagerUI {
         headerPanel.add(offlineTitleLabel, BorderLayout.WEST);
         headerPanel.add(buttonGroup,       BorderLayout.EAST);
 
-        JLabel errorLabel = new JLabel(
-                "해당 에이전트 단말기 네트워크와 소켓 세션 연결을 수립할 수 없습니다.",
-                SwingConstants.CENTER);
-        errorLabel.setFont(CmsManager.baseFont.deriveFont( Font.PLAIN, 13));
-        errorLabel.setForeground(Color.RED);
+        offlineCardLabel = new JLabel("해당 에이전트와 통신할 수 없습니다. 프로그램 실행 상태를 확인하세요.", SwingConstants.CENTER);
+        offlineCardLabel.setFont(CmsManager.baseFont.deriveFont( Font.PLAIN, 15));
 
         panel.add(headerPanel, BorderLayout.NORTH);
-        panel.add(errorLabel,  BorderLayout.CENTER);
+        panel.add(offlineCardLabel,  BorderLayout.CENTER);
         return panel;
     }
 
@@ -392,7 +389,7 @@ public class ManagerUI {
 
             if (!targetIp.isEmpty()) {
                 CmsManager.agents.put(alias,
-                        new AgentConnection(alias, targetIp, targetPw, null, null, null, false));
+                        new AgentConnection(alias, targetIp, targetPw, null, null, null, AgentConnection.Status.OFFLINE));
                 agentStore.saveAgents();
                 loadBackendPcList();
 
@@ -455,7 +452,7 @@ public class ManagerUI {
 
                 // 새 정보로 오프라인 추가 + 저장
                 CmsManager.agents.put(newAlias,
-                        new AgentConnection(newAlias, newIp, newPw, null, null, null, false));
+                        new AgentConnection(newAlias, newIp, newPw, null, null, null, AgentConnection.Status.OFFLINE));
                 agentStore.saveAgents();
                 loadBackendPcList();
 
@@ -487,7 +484,7 @@ public class ManagerUI {
 
         listModel.clear();
         CmsManager.agents.forEach((alias, agent) -> {
-            PcAgentData newData = new PcAgentData(agent.alias, agent.ip, agent.ON_state);
+            PcAgentData newData = new PcAgentData(agent.alias, agent.ip, agent.status);
             if (backupMap.containsKey(agent.ip)) {
                 PcAgentData old = backupMap.get(agent.ip);
                 newData.setInitSpec(old.getOsInfo(), old.getCpuInfo(),
@@ -568,58 +565,71 @@ public class ManagerUI {
     }
 
     private void bindPcDataToRightDetailPanel(PcAgentData data) {
-        if (data.isOnline()) {
-            mainTitleLabel.setText("● " + data.getPcName() + " (" + data.getIpAddress() + ")");
-            osValueLabel.setText(data.getOsInfo());
+        switch (data.getStatus()) {
+            case ONLINE -> {
+                mainTitleLabel.setText("<html><font color='green'>●</font> <b>" + data.getPcName() + " (" + data.getIpAddress() + ")");
+                osValueLabel.setText(data.getOsInfo());
 
-            shortcutCombo.removeAllItems();
-            if (data.getTotalMemory() > 0) {
-                List<String> list = data.getShortcuts();
-                if (list == null || list.isEmpty()) {
-                    shortcutCombo.addItem("등록된 바로가기 없음");
+                shortcutCombo.removeAllItems();
+                if (data.getTotalMemory() > 0) {
+                    List<String> list = data.getShortcuts();
+                    if (list == null || list.isEmpty()) {
+                        shortcutCombo.addItem("등록된 바로가기 없음");
+                        shortcutCombo.setEnabled(false);
+                        runShortcutButton.setEnabled(false);
+                    } else {
+                        for (String name : list) shortcutCombo.addItem(name);
+                        shortcutCombo.setEnabled(true);
+                        runShortcutButton.setEnabled(true);
+                    }
+                } else {
+                    shortcutCombo.addItem("수신 대기 중...");
                     shortcutCombo.setEnabled(false);
                     runShortcutButton.setEnabled(false);
-                } else {
-                    for (String name : list) shortcutCombo.addItem(name);
-                    shortcutCombo.setEnabled(true);
-                    runShortcutButton.setEnabled(true);
                 }
-            } else {
-                shortcutCombo.addItem("수신 대기 중...");
-                shortcutCombo.setEnabled(false);
-                runShortcutButton.setEnabled(false);
+
+                if (data.getTotalMemory() > 0) {
+                    int ramPercent = (int) Math.round((double) data.getCurrentRamUsed() / data.getTotalMemory() * 100.0);
+                    int diskPercent = (int) Math.round((double) data.getCurrentDiskUsed() / data.getTotalDisk() * 100.0);
+
+                    cpuValueLabel.setText(data.getCpuInfo());
+                    ramValueLabel.setText(data.getTotalMemory() + " GB (물리 메모리)");
+                    diskValueLabel.setText(data.getCurrentDiskUsed() + " GB / " + data.getTotalDisk()
+                            + " GB (" + diskPercent + "% 사용)");
+                    memoryProgressBar.setValue(ramPercent);
+                    memoryValueLabel.setText(data.getCurrentRamUsed() + " GB / " + data.getTotalMemory()
+                            + " GB (" + ramPercent + "%) - " + data.getUptime() + "s 가동");
+
+                    int cpuPercent = data.getCurrentCpu();
+                    cpuProgressBar.setValue(cpuPercent);
+                    cpuUsageLabel.setText(cpuPercent + " %");
+
+                } else {
+                    cpuValueLabel.setText("시스템 정보 대기 중...");
+                    ramValueLabel.setText("대기 중...");
+                    diskValueLabel.setText("대기 중...");
+                    memoryProgressBar.setValue(0);
+                    memoryValueLabel.setText("실시간 OSHI 데이터 스트림 대기 중...");
+                    cpuProgressBar.setValue(0);
+                    cpuUsageLabel.setText("0 %");
+                }
+
+                rightCardLayout.show(rightPanel, "ONLINE_VIEW");
             }
+            case OFFLINE -> {
+                offlineTitleLabel.setText("<html><font color='red'>●</font> <b>" + data.getPcName() + "</b> (" + data.getIpAddress() + ")</html>");
 
-            if (data.getTotalMemory() > 0) {
-                int ramPercent  = (int) Math.round((double) data.getCurrentRamUsed()  / data.getTotalMemory() * 100.0);
-                int diskPercent = (int) Math.round((double) data.getCurrentDiskUsed() / data.getTotalDisk()   * 100.0);
-
-                cpuValueLabel.setText(data.getCpuInfo());
-                ramValueLabel.setText(data.getTotalMemory() + " GB (물리 메모리)");
-                diskValueLabel.setText(data.getCurrentDiskUsed() + " GB / " + data.getTotalDisk()
-                        + " GB (" + diskPercent + "% 사용)");
-                memoryProgressBar.setValue(ramPercent);
-                memoryValueLabel.setText(data.getCurrentRamUsed() + " GB / " + data.getTotalMemory()
-                        + " GB (" + ramPercent + "%) - " + data.getUptime() + "s 가동");
-
-                int cpuPercent = data.getCurrentCpu();
-                cpuProgressBar.setValue(cpuPercent);
-                cpuUsageLabel.setText(cpuPercent + " %");
-
-            } else {
-                cpuValueLabel.setText("시스템 정보 대기 중...");
-                ramValueLabel.setText("대기 중...");
-                diskValueLabel.setText("대기 중...");
-                memoryProgressBar.setValue(0);
-                memoryValueLabel.setText("실시간 OSHI 데이터 스트림 대기 중...");
-                cpuProgressBar.setValue(0);
-                cpuUsageLabel.setText("0 %");
+                offlineCardLabel.setText("해당 에이전트와 통신할 수 없습니다. 프로그램 실행 상태를 확인하세요.");
+                offlineCardLabel.setForeground(Color.RED);
+                rightCardLayout.show(rightPanel, "OFFLINE_VIEW");
             }
+            case CONNECTING -> {
+                offlineTitleLabel.setText("<html><font color='orange'>●</font> <b>" + data.getPcName() + "</b> (" + data.getIpAddress() + ")</html>");
 
-            rightCardLayout.show(rightPanel, "ONLINE_VIEW");
-        } else {
-            offlineTitleLabel.setText("● " + data.getPcName() + " (" + data.getIpAddress() + ") - 연결 끊김");
-            rightCardLayout.show(rightPanel, "OFFLINE_VIEW");
+                offlineCardLabel.setText("에이전트와 연결을 시도하고 있습니다...");
+                offlineCardLabel.setForeground(Color.GRAY);
+                rightCardLayout.show(rightPanel, "OFFLINE_VIEW");
+            }
         }
     }
 
@@ -703,13 +713,18 @@ public class ManagerUI {
             card.setBackground(isSelected ? new Color(210, 230, 245) : Color.WHITE);
 
             if (value instanceof PcAgentData data) {
-                String dotColor = data.isOnline() ? "green" : "red";
+                String dotColor = switch (data.getStatus()) {
+                    case ONLINE     -> "green";
+                    case OFFLINE    -> "red";
+                    case CONNECTING -> "orange";
+                };
+
                 JLabel titleLabel = new JLabel(
                         "<html><font color='" + dotColor + "'>●</font> <b>" + data.getPcName() + "</b></html>");
                 titleLabel.setFont(CmsManager.baseFont.deriveFont(Font.PLAIN, 13));
 
                 String subText;
-                if (data.isOnline()) {
+                if (data.getStatus() == AgentConnection.Status.ONLINE) {
                     if (data.getTotalMemory() > 0) {
                         int ramPercent = (int) Math.round(
                                 (double) data.getCurrentRamUsed() / data.getTotalMemory() * 100.0);
@@ -718,6 +733,8 @@ public class ManagerUI {
                     } else {
                         subText = data.getIpAddress() + " (시스템 스펙 수신 대기중...)";
                     }
+                } else if (data.getStatus() == AgentConnection.Status.CONNECTING) {
+                    subText = "연결 중...";
                 } else {
                     subText = "네트워크 오프라인";
                 }

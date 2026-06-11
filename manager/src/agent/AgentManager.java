@@ -62,7 +62,7 @@ public class AgentManager {
                 String alias = agent.get("alias").getAsString();
                 String ip    = agent.get("ip").getAsString();
                 String pw    = agent.get("password").getAsString();
-                agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, false));
+                agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, AgentConnection.Status.OFFLINE));
                 connectInputs.add("CONNECT " + ip + " " + pw + " " + alias);
             });
 
@@ -97,8 +97,8 @@ public class AgentManager {
                 String pw = agentData.get("password").getAsString();
 
                 AgentConnection existing = agents.get(alias);
-                if (existing == null || !existing.ON_state) {
-                    agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, false));
+                if (existing == null || existing.status == AgentConnection.Status.OFFLINE) {
+                    agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, AgentConnection.Status.OFFLINE));
                     connectInputs.add("CONNECT " + ip + " " + pw + " " + alias);
                 }
             });

@@ -40,6 +40,10 @@ public class ConnectionManager {
         String agentPW = parts[2];
         String alias   = parts[3];
 
+        agents.put(alias, new AgentConnection(
+                alias, agentIP, agentPW, null, null, null, AgentConnection.Status.CONNECTING));
+        notifyUI();
+
         try {
             Socket socket = new Socket(agentIP, PORT);
             socket.setSoTimeout(INTERVAL * 3000);
@@ -61,7 +65,7 @@ public class ConnectionManager {
             }
             System.out.println("[" + alias + "] 인증 성공");
 
-            AgentConnection agent = new AgentConnection(alias, agentIP, agentPW, socket, out, in, true);
+            AgentConnection agent = new AgentConnection(alias, agentIP, agentPW, socket, out, in, AgentConnection.Status.ONLINE);
             agents.put(alias, agent);
             agentStore.saveAgents();
             notifyUI();
@@ -106,7 +110,7 @@ public class ConnectionManager {
         String alias = parts[1];
 
         AgentConnection agent = agents.get(alias);
-        if (agent == null || !agent.ON_state) {
+        if (agent == null || agent.status == AgentConnection.Status.OFFLINE) {
             System.out.println("[" + alias + "] 존재하지 않는 Agent입니다. ");
             return;
         }
@@ -130,9 +134,9 @@ public class ConnectionManager {
         AgentConnection current = agents.get(alias);
 
         if (current == null) return;
-        if (current.socket != mySocket) return;
+        if (mySocket != null && current.socket != null && current.socket != mySocket) return;
 
-        agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, false));
+        agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, AgentConnection.Status.OFFLINE));
         System.out.println("[" + alias + "] 오프라인 전환");
         if (agentStore != null) agentStore.saveAgents();
         notifyUI();

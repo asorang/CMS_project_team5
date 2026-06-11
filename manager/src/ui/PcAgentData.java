@@ -1,5 +1,7 @@
 package src.ui;
 
+import src.agent.AgentConnection;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,7 +11,7 @@ import java.util.List;
 public class PcAgentData {
     private String pcName;
     private String ipAddress;
-    private boolean isOnline;
+    private AgentConnection.Status status;
 
     // 초기 스펙 데이터 (고정값)
     private String osInfo   = "대기 중...";
@@ -24,10 +26,10 @@ public class PcAgentData {
     private int currentDiskUsed = 0;
     private long uptime         = 0;
 
-    public PcAgentData(String pcName, String ipAddress, boolean isOnline) {
+    public PcAgentData(String pcName, String ipAddress, AgentConnection.Status status) {
         this.pcName    = pcName;
         this.ipAddress = ipAddress;
-        this.isOnline  = isOnline;
+        this.status  = status;
     }
 
     public void setInitSpec(String os, String cpu, int totalMem, int totalDisk, List<String> shortcuts) {
@@ -48,7 +50,7 @@ public class PcAgentData {
     // Getter
     public String getPcName()        { return pcName; }
     public String getIpAddress()     { return ipAddress; }
-    public boolean isOnline()        { return isOnline; }
+    public AgentConnection.Status getStatus() { return status; }
     public String getOsInfo()        { return osInfo; }
     public String getCpuInfo()       { return cpuInfo; }
     public int getTotalMemory()      { return totalMemory; }
