@@ -63,7 +63,7 @@ public class ManagerUI {
 
         frame.add(mainPanel);
         frame.setVisible(true);
-
+        frame.setResizable(false);
         loadBackendPcList();
     }
 
