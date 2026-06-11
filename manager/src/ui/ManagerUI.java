@@ -92,7 +92,7 @@ public class ManagerUI {
             new Thread(() -> {
                 agentStore.reloadAgents();
                 SwingUtilities.invokeLater(() -> {
-                    loadBackendPcList();
+                    // loadBackendPcList() 제거 — reloadAgents() 내부에서 이미 처리됨
                     rightCardLayout.show(rightPanel, "BLANK_VIEW");
                     refreshButton.setIcon(loadIcon("/resource/icon_refresh.png", 18));
                     refreshButton.setEnabled(true);
@@ -385,6 +385,11 @@ public class ManagerUI {
             String targetPw = new String(passField.getPassword());
             String alias    = aliasField.getText().isEmpty() ? "PC-AGENT" : aliasField.getText();
 
+            if (CmsManager.agents.containsKey(alias)) {
+                JOptionPane.showMessageDialog(dialog, "이미 사용 중인 별칭입니다.", "오류", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             if (!targetIp.isEmpty()) {
                 CmsManager.agents.put(alias,
                         new AgentConnection(alias, targetIp, targetPw, null, null, null, false));
@@ -433,11 +438,18 @@ public class ManagerUI {
             String newPw    = new String(passField.getPassword());
             String newAlias = aliasField.getText().isEmpty() ? selected.getPcName() : aliasField.getText();
 
+            if (!newAlias.equals(selected.getPcName()) && CmsManager.agents.containsKey(newAlias)) {
+                JOptionPane.showMessageDialog(dialog, "이미 사용 중인 별칭입니다.", "오류", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             if (!newIp.isEmpty()) {
                 // 기존 소켓 닫기 + Map에서 제거
                 AgentConnection old = CmsManager.agents.get(selected.getPcName());
                 if (old != null && old.socket != null) {
-                    try { old.socket.close(); } catch (Exception ignored) {}
+                    try {
+                        connectionManager.killAgent(selected.getPcName());
+                    } catch (Exception ignored) {}
                 }
                 CmsManager.agents.remove(selected.getPcName());
 
@@ -621,7 +633,9 @@ public class ManagerUI {
                 AgentConnection target = CmsManager.agents.get(selected.getPcName());
                 if (target != null) {
                     if (target.socket != null) {
-                        try { target.socket.close(); } catch (Exception ignored) {}
+                        try {
+                            connectionManager.killAgent(selected.getPcName());
+                        } catch (Exception ignored) {}
                     }
                     CmsManager.agents.remove(selected.getPcName());
                     agentStore.saveAgents();

@@ -56,7 +56,7 @@ public class ConnectionManager {
             if (!authResult.get("auth").getAsString().equals("AUTH_OK")) {
                 System.out.println("[" + alias + "] 인증 실패");
                 socket.close();
-                putOffline(alias, agentIP, agentPW);
+                putOffline(alias, agentIP, agentPW, socket);
                 return;
             }
             System.out.println("[" + alias + "] 인증 성공");
@@ -90,13 +90,13 @@ public class ConnectionManager {
                 } catch (Exception e) {
                     System.out.println("[" + alias + "] 수신 종료: " + e.getMessage());
                 } finally {
-                    putOffline(alias, agentIP, agentPW);
+                    putOffline(alias, agentIP, agentPW, socket);
                 }
             }).start();
 
         } catch (Exception e) {
             System.out.println("[" + alias + "] 연결 실패: " + e.getMessage());
-            putOffline(alias, agentIP, agentPW);
+            putOffline(alias, agentIP, agentPW, null);
         }
     }
 
@@ -126,13 +126,25 @@ public class ConnectionManager {
         System.out.println("[송신 → " + alias + "] " + wrapper);
     }
 
-    private void putOffline(String alias, String ip, String pw) {
-        if (!agents.containsKey(alias)) return;
+    private void putOffline(String alias, String ip, String pw, Socket mySocket) {
+        AgentConnection current = agents.get(alias);
+
+        if (current == null) return;
+        if (current.socket != mySocket) return;
 
         agents.put(alias, new AgentConnection(alias, ip, pw, null, null, null, false));
         System.out.println("[" + alias + "] 오프라인 전환");
         if (agentStore != null) agentStore.saveAgents();
         notifyUI();
+    }
+
+    public void killAgent(String alias) {
+        AgentConnection agent = agents.get(alias);
+        if (agent == null || agent.socket == null) return;
+        try {
+            agent.out.println("{\"cmd\":\"DISCONNECT\"}");
+            agent.socket.close();
+        } catch (Exception ignored) {}
     }
 
     private void notifyUI() {

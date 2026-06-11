@@ -85,6 +85,14 @@ public class SocketManager {
                 try {
                     String cmd;
                     while ((cmd = in.readLine()) != null) {
+                        try {
+                            JsonObject json = JsonParser.parseString(cmd).getAsJsonObject();
+                            if (json.has("cmd") && "DISCONNECT".equals(json.get("cmd").getAsString())) {
+                                System.out.println("Manager에서 연결을 종료함");
+                                socket.close();
+                                return;
+                            }
+                        } catch (Exception ignored) {}
                         SystemCollector.systemCommand(cmd, out);
                     }
                 } catch (Exception e) {
